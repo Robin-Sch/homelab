@@ -1,0 +1,30 @@
+services:
+    scrutiny-web:
+        container_name: scrutiny-web
+        image: ghcr.io/analogj/scrutiny:master-web
+        restart: unless-stopped
+        environment:
+            - SCRUTINY_WEB_INFLUXDB_HOST=scrutiny-influxdb
+        volumes:
+            - ./config:/opt/scrutiny/config
+        extra_hosts:
+            - ${NTFY_DOMAIN}:172.17.0.1
+        depends_on:
+            - scrutiny-influxdb
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.scrutiny.rule=Host(`disks.${DOMAIN}`)
+            - traefik.http.services.scrutiny.loadbalancer.server.port=8080
+            - traefik.http.routers.scrutiny.middlewares=sso-required@file
+
+    scrutiny-influxdb:
+        container_name: scrutiny-influxdb
+        image: influxdb:2.2
+        restart: unless-stopped
+        environment:
+            - INFLUXD_LOG_LEVEL=warn
+        volumes:
+            - influx_data:/var/lib/influxdb2
+
+volumes:
+    influx_data: {}

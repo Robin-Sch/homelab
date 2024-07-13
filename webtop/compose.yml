@@ -1,0 +1,21 @@
+services:
+    webtop:
+        container_name: webtop
+        image: lscr.io/linuxserver/webtop:debian-xfce
+        restart: unless-stopped
+        shm_size: 1gb
+        security_opt:
+            - seccomp:unconfined
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+            - SUBFOLDER=/
+            - TITLE=Webtop
+        volumes:
+            - webtop:/config
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.webtop.rule=Host(`webtop.${DOMAIN}`)
+            - traefik.http.services.webtop.loadbalancer.server.port=3000
+            - traefik.http.routers.webtop.middlewares=sso-required@file

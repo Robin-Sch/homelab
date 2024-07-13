@@ -1,0 +1,39 @@
+services:
+    plausible:
+        container_name: plausible
+        image: plausible/analytics:v1.5
+        restart: unles-stopped
+        command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
+        environment:
+            - BASE_URL=plausible.${DOMAIN}
+            - SECRET_KEY_BASE=${PLAUSIBLE_RANDOM_KEY}
+            - DATABASE_URL=postgres://${DB_USER}:${DB_PASS}@plausible-db:5432/${DB_DBNAME}
+            - CLICKHOUSE_DATABASE_URL=http://plausible-events-db:8123/plausible_events_db
+            - DISABLE_REGISTRATION=true
+        depends_on:
+            - plausible-db
+            - plausible-events-db
+
+    plausible-db:
+        container_name: plausible-db
+        image: postgres:14-alpine
+        restart: unles-stopped
+        environment:
+            - POSTGRES_DB=${DB_DBNAME}
+            - POSTGRES_PASSWORD=${DB_PASS}
+            - POSTGRES_USER=${DB_USER}
+        volumes:
+            - ${DOCKER_DATA}/plausible/data:/var/lib/postgresql/data
+
+    plausible-events-db:
+        container_name: plausible-events-db
+        image: clickhouse/clickhouse-server:22.6-alpine
+        restart: unles-stopped
+        cpus: 0.5
+        volumes:
+            - clickhouse_data:/var/lib/clickhouse
+            - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/logging.xml:ro
+            - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/logging.xml:ro
+
+volumes:
+    clickhouse_data: {}

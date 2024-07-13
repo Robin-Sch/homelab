@@ -1,0 +1,38 @@
+html {
+	font-size: 62.5%; /*62.5% = 10px; to make it easier to calculate REM units.*/
+}
+
+body {
+	text-align: center;
+	font-family: "Oswald", sans-serif;
+	font-weight: 300;
+	font-size: 2.2rem;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	background-color: black;
+	color: white;
+}
+
+.container {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+}
+
+#clock {
+	max-width: 600px;
+}
+
+/* for smaller screens below 700px */
+@media only screen and (max-width: 700px) {
+	body {font-size: 1.8rem;}
+}
+
+/*for smaller screens below 300px*/
+@media only screen and (max-width: 300px) {
+	body {font-size: 1.6rem;}
+}

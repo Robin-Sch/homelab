@@ -1,0 +1,81 @@
+include:
+    - collabora-compose.yml
+    - rss-compose.yml
+
+services:
+    nextcloud:
+        container_name: nextcloud
+        image: nextcloud:apache
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+            - POSTGRES_USER=${NEXTCLOUD_POSTGRES_USER}
+            - POSTGRES_PASSWORD=${NEXTCLOUD_POSTGRES_PASS}
+            - POSTGRES_DB=${NEXTCLOUD_POSTGRES_DB}
+            - POSTGRES_HOST=nextcloud-db
+            - REDIS_HOST=nextcloud-redis
+            - NEXTCLOUD_HOSTNAME=nextcloud.${DOMAIN}
+        volumes:
+            - html:/var/www/html
+            - ./config:/var/www/html/config
+            - ./data:/data
+            - ${DOCKER_DATA}/nextcloud/apps:/var/www/html/apps
+            - ${DOCKER_DATA}/nextcloud/custom_apps:/var/www/html/custom_apps
+            - /dev/null:/var/log/apache2/access.log
+        extra_hosts:
+            - office.${DOMAIN}:${IP} # Doesn't work with container name
+            - rss.${DOMAIN}:${IP} # Doesn't work with container name
+        depends_on:
+            - nextcloud-cron
+            - nextcloud-db
+            - nextcloud-redis
+            - nextcloud-collabora
+            - nextcloud-rss
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN}`)
+            - traefik.http.services.nextcloud.loadbalancer.server.port=80
+            - traefik.http.routers.nextcloud.middlewares=nextcloud_redirectregex
+            - traefik.http.middlewares.nextcloud_redirectregex.redirectregex.permanent=true
+            - traefik.http.middlewares.nextcloud_redirectregex.redirectregex.regex=https://(.*)/.well-known/(?:card|cal)dav
+            - traefik.http.middlewares.nextcloud_redirectregex.redirectregex.replacement=https://$${1}/remote.php/dav
+            - traefik.http.routers.nextcloud.middlewares=sso-required@file
+
+    nextcloud-cron:
+        container_name: nextcloud-cron
+        image: nextcloud:apache
+        restart: unless-stopped
+        entrypoint: /cron.sh
+        volumes:
+            - html:/var/www/html
+            - ./config:/var/www/html/config
+            - ./data:/data
+            - ${DOCKER_DATA}/nextcloud/apps:/var/www/html/apps
+            - ${DOCKER_DATA}/nextcloud/custom_apps:/var/www/html/custom_apps
+        extra_hosts:
+            - office.${DOMAIN}:${IP} # Doesn't work with container name
+            - rss.${DOMAIN}:${IP} # Doesn't work with container name
+        depends_on:
+            - nextcloud-db
+            - nextcloud-redis
+
+    nextcloud-db:
+        container_name: nextcloud-db
+        image: postgres:14-alpine
+        restart: unless-stopped
+        environment:
+            - POSTGRES_USER=${NEXTCLOUD_POSTGRES_USER}
+            - POSTGRES_PASSWORD=${NEXTCLOUD_POSTGRES_PASS}
+            - POSTGRES_DB=${NEXTCLOUD_POSTGRES_DB}
+        volumes:
+            - ${DOCKER_DATA}/nextcloud/data:/var/lib/postgresql/data
+
+    nextcloud-redis:
+        container_name: nextcloud-redis
+        image: redis:alpine
+        restart: unless-stopped
+
+volumes:
+    html: {}

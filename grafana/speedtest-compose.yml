@@ -1,0 +1,5 @@
+services:
+    grafana-speedtest:
+        container_name: grafana-speedtest
+        image: miguelndecarvalho/speedtest-exporter:latest
+        restart: unless-stopped

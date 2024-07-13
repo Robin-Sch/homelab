@@ -1,0 +1,12 @@
+services:
+    actual:
+        container_name: actual
+        image: actualbudget/actual-server:latest
+        restart: unless-stopped
+        volumes:
+            - ./data:/data # TODO: DOCKER_DATA?
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.actual.rule=Host(`money.${DOMAIN}`)
+            - traefik.http.services.actual.loadbalancer.server.port=5006
+            - traefik.http.routers.actual.middlewares=sso-required@file

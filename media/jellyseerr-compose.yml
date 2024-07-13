@@ -1,0 +1,18 @@
+services:
+    jellyseerr:
+        container_name: jellyseerr
+        image: fallenbagel/jellyseerr:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        volumes:
+            - ./jellyseerr:/app/config
+        depends_on:
+            - jellyfin
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.${DOMAIN}`)
+            - traefik.http.services.jellyseerr.loadbalancer.server.port=5055
+            - traefik.http.routers.jellyseerr.middlewares=sso-required@file

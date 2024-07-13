@@ -1,0 +1,14 @@
+services:
+    ntfy:
+        container_name: ntfy
+        image: binwiederhier/ntfy
+        restart: unless-stopped
+        command: serve
+        environment:
+            - TZ=${TZ}
+        volumes:
+            - ./ntfy:/etc/ntfy
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.ntfy.rule=Host(`ntfy.${DOMAIN}`)
+            - traefik.http.services.ntfy.loadbalancer.server.port=80

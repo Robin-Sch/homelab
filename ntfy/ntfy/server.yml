@@ -1,0 +1,5 @@
+base-url: "https://XXX"
+auth-file: "/etc/ntfy/user.db"
+auth-default-access: "deny-all"
+log-level: warn
+behind-proxy: true

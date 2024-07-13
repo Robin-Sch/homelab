@@ -1,0 +1,32 @@
+services:
+   ryot:
+       container_name: ryot
+       image: ghcr.io/ignisda/ryot:latest
+       restart: unless-stopped
+       environment:
+            - TZ=${TZ}
+            - USERS_ALLOW_REGISTRATION=false
+            - FRONTEND_URL=https://track.${DOMAIN}
+            - ANIME_AND_MANGA_ANILIST_PREFER_ENGLISH=true
+            - DISABLE_TELEMETRY=true
+            - SERVER_VIDEOS_DISABLED=true
+            - DATABASE_URL=postgres://ryot:${POSTGRES_PASSWORD}@ryot-db:5432/ryot
+       depends_on:
+           - ryot-db
+       labels:
+           - traefik.enable=true
+           - traefik.http.routers.ryot.rule=Host(`track.${DOMAIN}`)
+           - traefik.http.services.ryot.loadbalancer.server.port=8000
+           - traefik.http.routers.ryot.middlewares=sso-required@file
+
+   ryot-db:
+       container_name: ryot-db
+       image: postgres:16-alpine
+       restart: unless-stopped
+       environment:
+            - POSTGRES_DB=ryot
+            - POSTGRES_USER=ryot
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+       volumes:
+           -${DOCKER_DATA}/ryot/data:/var/lib/postgresql/data
+           - ryot-postgres:/var/lib/postgresql/data

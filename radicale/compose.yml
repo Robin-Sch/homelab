@@ -1,0 +1,13 @@
+services:
+    radicale:
+        container_name: radicale
+        image: tomsquest/docker-radicale
+        restart: unless-stopped
+        volumes:
+            - ./data:/data
+            - ./config:/config:ro
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.radicale.rule=Host(`radicale.${DOMAIN}`)
+            - traefik.http.services.radicale.loadbalancer.server.port=5232
+            - traefik.http.routers.radicale.middlewares=sso-required@file

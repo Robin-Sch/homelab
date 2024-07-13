@@ -1,0 +1,1 @@
+docker run --rm -v /run/user/1000/docker.sock:/var/run/docker.sock -v /home/psyche/.cache/trivy:/root/.cache/ aquasec/trivy:latest image nextcloud:apache

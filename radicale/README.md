@@ -1,0 +1,1 @@
+Change the `config/users` file to `username:password`

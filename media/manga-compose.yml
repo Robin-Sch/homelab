@@ -1,0 +1,65 @@
+services:
+    kavita:
+        container_name: kavita
+        image: jvmilazz0/kavita:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ={TZ}
+        volumes:
+            - ${DOCKER_DATA}/media/kavita:/kavita/config
+            - manga-downloads:/manga
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.kavita.rule=Host(`manga.${DOMAIN}`)
+            - traefik.http.services.kavita.loadbalancer.server.port=5000
+            - traefik.http.routers.kavita.middlewares=sso-required@file
+
+    kaizoku:
+        container_name: kaizoku
+        image: ghcr.io/oae/kaizoku:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+            - KAIZOKU_PORT=3000
+            - REDIS_HOST=kaizoku-redis
+            - REDIS_PORT=6379
+            - DATABASE_URL=postgresql://${KAIZOKU_POSTGRES_USER}:${KAIZOKU_POSTGRES_PASS}@kaizoku-db:5432/${KAIZOKU_POSTGRES_DB}
+        volumes:
+            - ${DOCKER_DATA}/media/kaizoku:/config
+            - manga-downloads:/data
+        depends_on:
+            - kaizoku-redis
+            - kaizoku-db
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.kaizoku.rule=Host(`manga-download.${DOMAIN}`)
+            - traefik.http.services.kaizoku.loadbalancer.server.port=3000
+            - traefik.http.routers.kaizoku.middlewares=sso-required@file
+        deploy:
+            resources:
+                limits:
+                    cpus: '2'
+                    memory: 3500M
+
+    kaizoku-db:
+        container_name: kaizoku-db
+        image: postgres:14-alpine
+        restart: unless-stopped
+        environment:
+            - POSTGRES_USER=${KAIZOKU_POSTGRES_USER}
+            - POSTGRES_PASSWORD=${KAIZOKU_POSTGRES_PASS}
+            - POSTGRES_DB=${KAIZOKU_POSTGRES_DB}
+        volumes:
+            - ${DOCKER_DATA}/media/kaizoku:/var/lib/postgresql/data
+
+    kaizoku-redis:
+        container_name: kaizoku-redis
+        image: redis:alpine
+        restart: unless-stopped
+
+volumes:
+    manga-downloads:

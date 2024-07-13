@@ -1,0 +1,38 @@
+# To generate wireguard configre, create a wg0.conf file in the ./wireguard/ directory. Make sure to include below to access the Transmission web GUI:
+# PostUp = DROUTE=$(ip route | grep default | awk '{print $3}'); HOMENET=192.168.0.0/16; HOMENET2=10.0.0.0/8; HOMENET3=172.16.0.0/12; ip route add $HOMENET3 via $DROUTE;ip route add $HOMENET2 via $DROUTE; ip route add $HOMENET via $DROUTE;iptables -I OUTPUT -d $HOMENET -j ACCEPT;iptables -A OUTPUT -d $HOMENET2 -j ACCEPT; iptables -A OUTPUT -d $HOMENET3 -j ACCEPT;  iptables -A OUTPUT ! -o %i -m mark ! --mark $(wg show %i fwmark) -m addrtype ! --dst-type LOCAL -j REJECT
+# PreDown = HOMENET=192.168.0.0/16; HOMENET2=10.0.0.0/8; HOMENET3=172.16.0.0/12; ip route del $HOMENET3 via $DROUTE;ip route del $HOMENET2 via $DROUTE; ip route del $HOMENET via $DROUTE; iptables -D OUTPUT ! -o %i -m mark ! --mark $(wg show %i fwmark) -m addrtype ! --dst-type LOCAL -j REJECT; iptables -D OUTPUT -d $HOMENET -j ACCEPT; iptables -D OUTPUT -d $HOMENET2 -j ACCEPT; iptables -D OUTPUT -d $HOMENET3 -j ACCEPT
+# For mullvad, make sure to click on "Manage ports and Wireguard keys" and generate a new wireguard port. After this, stop the transmision container and edit config/settings.json. Set peer-port to the port and make sure peer-port-random-on-start is set to false.
+# Source: https://www.reddit.com/r/VPNTorrents/comments/j1ap68/my_docker_setup_for_torrenting_transmission
+
+services:
+    wireguard:
+        container_name: wireguard
+        image: linuxserver/wireguard
+        restart: unless-stopped
+        cap_add:
+            - NET_ADMIN
+            - SYS_MODULE
+        environment:
+            - TZ=${TZ}
+        volumes:
+            - ./wireguard:/config
+            - /lib/modules:/lib/modules
+        ports:
+            - 51820:51820/udp
+            - 9091:9091
+        sysctls:
+            - net.ipv4.conf.all.src_valid_mark=1
+ 
+  transmission:
+    container_name: transmission
+        image: linuxserver/transmission
+        restart: unless-stopped
+        environment:
+            - TZ=${TZ}
+            - TRANSMISSION_WEB_HOME=/transmission-web-control/
+        volumes:
+            - ./config:/config
+            - /mnt/downloads/_Completed:/downloads
+        depends_on:
+            - wireguard
+        network_mode: service:wireguard

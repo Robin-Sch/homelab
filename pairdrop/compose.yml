@@ -1,0 +1,16 @@
+services:
+    pairdrop:
+        container_name: pairdrop
+        image: lscr.io/linuxserver/pairdrop
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+            - RATE_LIMIT=true
+            - WS_FALLBACK=true
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.pairdrop.rule=Host(`drop.${DOMAIN}`)
+            - traefik.http.services.pairdrop.loadbalancer.server.port=3000
+            - traefik.http.routers.pairdrop.middlewares=sso-required@file

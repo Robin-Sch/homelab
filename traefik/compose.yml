@@ -1,0 +1,32 @@
+services:
+    traefik:
+        container_name: traefik
+        image: traefik:v3.0
+        restart: unless-stopped
+        environment:
+            - CF_API_EMAIL=${CF_EMAIL}
+            - CF_DNS_API_TOKEN=${CF_TOKEN}
+        volumes:
+            - ./traefik:/etc/traefik
+            - /run/user/1000/docker.sock:/var/run/docker.sock:ro
+        ports:
+            - ${IP}:80:80
+            - ${IP}:443:443
+            - ${IP}:8080:8080
+        networks:
+            - default
+            - ...
+
+    nginx-echo-headers:
+        container_name: nginx-echo-headers
+        image: brndnmtthws/nginx-echo-headers
+        restart: unless-stopped
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.echo-headers.rule=Host(`headers.${DOMAIN}`)
+            - traefik.http.services.echo-headers.loadbalancer.server.port=8080
+            - traefik.http.routers.echo-headers.middlewares=sso-required@file
+
+networks:
+    ...:
+        external: true

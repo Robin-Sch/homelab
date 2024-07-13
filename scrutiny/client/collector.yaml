@@ -1,0 +1,6 @@
+version: 1
+host:
+  id: "XXX"
+
+log:
+  level: ERROR

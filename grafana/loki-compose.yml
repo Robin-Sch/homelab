@@ -1,0 +1,21 @@
+services:
+    grafana-loki:
+        container_name: grafana-loki
+        image: grafana/loki
+        restart: unless-stopped
+        command: -config.file=/etc/loki/config.yaml
+        volumes:
+            - ./loki:/etc/loki
+        ports:
+            - ${IP}:3100:3100
+
+    grafana-promtail:
+        container_name: grafana-promtail
+        image: grafana/promtail
+        restart: unless-stopped
+        command: -config.file=/etc/promtail/config.yaml
+        volumes:
+            - ./promtail:/etc/promtail
+            - /var/log:/var/log:ro
+        depends_on:
+            - grafana-loki

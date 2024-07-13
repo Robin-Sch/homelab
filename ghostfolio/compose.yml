@@ -1,0 +1,25 @@
+# services:
+#     ghostfolio:
+#         container_name: ghostfolio
+#         image: ghostfolio/ghostfolio:latest
+#         restart: unless-stopped
+#         environment:
+#             DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ghostfolio-db:5432/${POSTGRES_DB}?sslmode=prefer
+#             REDIS_HOST: 'redis'
+#             REDIS_PASSWORD: ${REDIS_PASSWORD}
+#         ports:
+#             - 0.0.0.0:3333:3333
+
+#     ghostfolio-db:
+#         container_name: postgres
+#         image: postgres:12-alpine
+#         restart: unless-stopped
+#         environment:
+#             - TODO
+#         volumes:
+#             - ${DOCKER_DATA}/ghostfolio/data:/var/lib/postgresql/data
+
+#     ghostfolio-redis:
+#         container_name: ghostfolio-redis
+#         image: redis:alpine
+#         restart: unless-stopped

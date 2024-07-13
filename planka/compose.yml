@@ -1,0 +1,51 @@
+services:
+    planka:
+        container_name: planka
+        image: ghcr.io/plankanban/planka:latest
+        restart: unless-stopped
+        command: >
+            bash -c
+                "for i in `seq 1 30`; do
+                    ./start.sh &&
+                    s=$$? && break || s=$$?;
+                    echo \"Tried $$i times. Waiting 5 seconds...\";
+                    sleep 5;
+                done; (exit $$s)"
+        environment:
+            - BASE_URL=https://tasks.${DOMAIN}
+            - TRUST_PROXY=1
+            - DATABASE_URL=postgresql://planka:${POSTGRES_PASSWORD}@planka-postgres/planka
+            - SECRET_KEY=${SECRET_KEY}
+            - OIDC_ISSUER=https://${AUTH_DOMAIN}/realms/homelab
+            - OIDC_CLIENT_ID=planka
+            - OIDC_CLIENT_SECRET=${OIDC_SECRET}
+            - OIDC_SCOPES=openid profile email
+            - OIDC_ADMIN_ROLES=ignored
+            - OIDC_ROLES_ATTRIBUTE=ignored
+            - OIDC_IGNORE_ROLES=true
+            - OIDC_ENFORCED=true
+        volumes:
+            - ./avatars:/app/public/user-avatars
+            - ./backgrounds:/app/public/project-background-images
+            - ./attachments:/app/private/attachments
+        depends_on:
+            - planka-postgres
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.planka.rule=Host(`tasks.${DOMAIN}`)
+            - traefik.http.services.planka.loadbalancer.server.port=1337
+            - traefik.http.routers.planka.middlewares=sso-required@file
+
+    planka-postgres:
+        container_name: planka-postgres
+        image: postgres:14-alpine
+        restart: unless-stopped
+        environment:
+            - POSTGRES_DB=planka
+            - POSTGRES_USER=planka
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+volumes:
+    postgres_data:

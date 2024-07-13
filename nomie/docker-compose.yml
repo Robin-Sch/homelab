@@ -1,0 +1,27 @@
+services:
+    nomie6:
+        container_name: nomie6
+        image: ghcr.io/qcasey/nomie6-oss:master
+        restart: unless-stopped
+        depends_on:
+            - couchdb
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.nomie.rule=Host(`nomie.${DOMAIN}`)
+            - traefik.http.services.nomie.loadbalancer.server.port=80
+            - traefik.http.routers.nomie.middlewares=sso-required@file
+
+    couchdb:
+        container_name: nomie6-db
+        image: couchdb:3
+        restart: unless-stopped
+        environment:
+            - COUCHDB_USER=${DB_USER}
+            - COUCHDB_PASSWORD=${DB_PASS}
+        volumes:
+            - ${DOCKER_DATA}/nomie/data:/opt/couchdb/data
+            - ./couchdb.ini:/opt/couchdb/etc/local.d/docker.ini
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.nomie-db.rule=Host(`nomie-db.${DOMAIN}`)
+            - traefik.http.services.nomie-db.loadbalancer.server.port=5984
