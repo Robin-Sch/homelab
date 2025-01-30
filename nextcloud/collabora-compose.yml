@@ -1,0 +1,17 @@
+services:
+    nextcloud-collabora:
+        container_name: nextcloud-collabora
+        image: collabora/code
+        restart: unless-stopped
+        cap_add:
+            - MKNOD
+        environment:
+            - aliasgroup1=https://nextcloud.${DOMAIN}:443
+            - dictionaries=en
+            - extra_params=--o:ssl.enable=false --o:ssl.termination=true
+        extra_hosts:
+            - nextcloud.${DOMAIN}:${IP}
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.office.rule=Host(`office.${DOMAIN}`)
+            - traefik.http.services.office.loadbalancer.server.port=9980

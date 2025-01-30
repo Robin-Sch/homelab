@@ -1,0 +1,28 @@
+services:
+    navidrome:
+        container_name: navidrome
+        image: deluan/navidrome:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+            - ND_LOGLEVEL=error
+            - ND_LASTFM_ENABLED=false
+            - ND_DEVACTIVITYPANEL=false
+            - ND_REVERSEPROXYUSERHEADER=Gap-Auth # SSO
+            - ND_REVERSEPROXYWHITELIST=0.0.0.0/0 # SSO
+        volumes:
+            - ${DOCKER_DATA}/media/navidrome:/data
+            - ${MUSIC_DATA}:/music:ro
+        deploy:
+            resources:
+                limits:
+                    memory: 3G
+                reservations:
+                    memory: 100M
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.navidrome.rule=Host(`music.${DOMAIN}`)
+            - traefik.http.services.navidrome.loadbalancer.server.port=4533
+            - traefik.http.routers.navidrome.middlewares=sso-required@file

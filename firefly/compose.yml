@@ -1,0 +1,74 @@
+services:
+    firefly:
+        container_name: firefly
+        image: fireflyiii/core:latest
+        restart: unless-stopped
+        environment:
+            - APP_ENV=production
+            - APP_KEY=${FIREFLY_KEY}
+            - TZ=${TZ}
+            - TRUSTED_PROXIES=**
+            - LOG_CHANNEL=single
+            - APP_LOG_LEVEL=warning
+            - AUDIT_LOG_LEVEL=emergency
+            - DB_CONNECTION=pgsql
+            - DB_HOST=firefly_db
+            - DB_PORT=5432
+            - DB_DATABASE=firefly
+            - DB_USERNAME=firefly
+            - DB_PASSWORD=${POSTGRES_PASSWORD}
+            - ENABLE_EXCHANGE_RATES=false
+            - ENABLE_EXTERNAL_RATES=false
+            - AUTHENTICATION_GUARD=remote_user_guard
+            - AUTHENTICATION_GUARD_HEADER=HTTP_X_AUTH_REQUEST_EMAIL
+            - STATIC_CRON_TOKEN=${CRON_TOKEN}
+            - APP_URL=https://firefly.${DOMAIN}
+        volumes:
+            - ./upload:/var/www/html/storage/upload
+        depends_on:
+            - firefly_db
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.firefly.rule=Host(`firefly.${DOMAIN}`)
+            - traefik.http.services.firefly.loadbalancer.server.port=8080
+            - traefik.http.routers.firefly.middlewares=sso-required@file
+
+   firefly_importer:
+       container_name: firefly_importer
+       image: fireflyiii/data-importer:latest
+       restart: unless-stopped
+       environment:
+           - TZ=${TZ}
+           - TRUSTED_PROXIES=**
+           - LOG_CHANNEL=single
+           - LOG_LEVEL=warning
+           - FIREFLY_III_URL=http://firefly:8080
+           - VANITY_URL=https://firefly.${DOMAIN}
+           - FIREFLY_III_ACCESS_TOKEN=${FIREFLY_ACCESS_TOKEN}
+       depends_on:
+           - firefly
+       labels:
+           - traefik.enable=true
+           - traefik.http.routers.firefly_importer.rule=Host(`fireflyimporter.${DOMAIN}`)
+           - traefik.http.services.firefly_importer.loadbalancer.server.port=8080
+           - traefik.http.routers.firefly_importer.middlewares=sso-required@file
+
+    firefly_db:
+        container_name: firefly_db
+        image: postgres:14-alpine
+        restart: unless-stopped
+        environment:
+            - POSTGRES_DB=firefly
+            - POSTGRES_USER=firefly
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+    firefly_cron:
+        container_name: firefly_cron
+        image: alpine
+        restart: unless-stopped
+        command: sh -c "echo \"0 3 * * * wget -qO- http://firefly:8080/api/v1/cron/${CRON_TOKEN}\" | crontab - && crond -f -L /dev/stdout"
+
+volumes:
+    postgres_data:

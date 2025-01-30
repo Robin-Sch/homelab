@@ -1,0 +1,55 @@
+include:
+    - manga-compose.yml
+    - mediatracker-compose.yml
+    - music-compose.yml
+    - ryot-compose.yml
+    - torrent-compose.yml
+
+services:
+    jellyfin:
+        container_name: jellyfin
+        image: linuxserver/jellyfin:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        volumes:
+            - ${DOCKER_DATA}/media/jellyfin:/config
+            - jellyfin_cache:/cache # not required to backup, can be re-downloaded
+            - jellyfin_metadata:/metadata # not required to backup, can be re-downloaded
+            - torrent-downloads:/media/torrents
+        deploy:
+            resources:
+                limits:
+                    memory: 3G
+                reservations:
+                    memory: 100M
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN}`)
+            - traefik.http.services.jellyfin.loadbalancer.server.port=5000
+            - traefik.http.routers.jellyfin.middlewares=sso-required@file
+
+    jellyseerr:
+        container_name: jellyseerr
+        image: fallenbagel/jellyseerr:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        volumes:
+            - ${DOCKER_DATA}/media/jellyseerr:/app/config
+        depends_on:
+            - jellyfin
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.${DOMAIN}`)
+            - traefik.http.services.jellyseerr.loadbalancer.server.port=5055
+            - traefik.http.routers.jellyseerr.middlewares=sso-required@file
+
+volumes:
+    jellyfin_cache:
+    jellyfin_metadata:
+    torrent-downloads:

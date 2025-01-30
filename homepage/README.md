@@ -1,0 +1,1 @@
+Edit `html/music.js` with jellyfin credentials, aswell as `html/weather.js` with openweathermap key and city code

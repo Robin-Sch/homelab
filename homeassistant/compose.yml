@@ -1,0 +1,18 @@
+services:
+    homeassistant:
+        container_name: homeassistant
+        image: lscr.io/linuxserver/homeassistant:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        volumes:
+            - ${DOCKER_DATA}/homeassistant:/config
+            - /etc/localtime:/etc/localtime:ro
+            - /run/dbus:/run/dbus:ro
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.homeassistant.rule=Host(`ha.${DOMAIN}`)
+            - traefik.http.services.homeassistant.loadbalancer.server.port=8123
+            - traefik.http.routers.homeassistant.middlewares=sso-required@file

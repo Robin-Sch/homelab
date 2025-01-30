@@ -1,0 +1,14 @@
+services:
+    scrutiny-collector:
+        container_name: scrutiny-collector
+        image: ghcr.io/analogj/scrutiny:master-collector
+        restart: unless-stopped
+        cap_add:
+            - SYS_RAWIO
+        volumes:
+            - /run/udev:/run/udev:ro
+            - ./collector.yaml:/opt/scrutiny/config/collector.yaml
+        environment:
+        COLLECTOR_API_ENDPOINT: 'https://disks.${DOMAIN}'
+        devices:
+            - "/dev/sda" # change to add other/more disks

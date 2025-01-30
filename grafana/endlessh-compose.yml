@@ -1,0 +1,13 @@
+services:
+    grafana-endlessh:
+        container_name: grafana-endlessh
+        image: shizunge/endlessh-go
+        restart: unless-stopped
+        command:
+            - -interval_ms=1000
+            - -logtostderr
+            - -v=1
+            - -enable_prometheus
+            - -geoip_supplier=ip-api
+        ports:
+            - 0.0.0.0:22:2222

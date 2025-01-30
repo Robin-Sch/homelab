@@ -1,0 +1,27 @@
+services:
+    kimai:
+        container_name: kimai
+        image: johannajohnsen/kimai2:apache-latest-prod
+        restart: unless-stopped
+        environment:
+            - ADMINMAIL=${KIMAI_MAIL}
+            - ADMINPASS=${KIMAI_PASS}
+            - DATABASE_URL=mysql://${DB_USER}:${DB_PASS}@kimai-db/${DB_DBNAME}
+            - TRUSTED_HOSTS=localhost,127.0.0.1,kimai.${DOMAIN}
+        volumes:
+            - public:/opt/kimai/public
+
+    kimai-db:
+        container_name: kimai-db
+        image: mariadb:latest
+        restart: unless-stopped
+        environment:
+            - MYSQL_DATABASE=${DB_DBNAME}
+            - MYSQL_USER=${DB_USER}
+            - MYSQL_PASSWORD=${DB_PASS}
+            - MYSQL_ROOT_PASSWORD=${DB_PASS}
+        volumes:
+            - ${DOCKER_DATA}/kimai/data:/var/lib/mysql
+
+volumes:
+    public:

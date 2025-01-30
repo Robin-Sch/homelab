@@ -1,0 +1,15 @@
+services:
+    mysterium:
+        container_name: mysterium
+        image: mysteriumnetwork/myst
+        restart: unless-stopped
+        cap_add:
+            - NET_ADMIN
+        command: service --agreed-terms-and-conditions
+        volumes:
+            - ${DOCKER_DATA}/mysterium/data:/var/lib/mysterium-node
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.mysterium.rule=Host(`myst.${DOMAIN}`)
+            - traefik.http.services.mysterium.loadbalancer.server.port=4449
+            - traefik.http.routers.mysterium.middlewares=sso-required@file

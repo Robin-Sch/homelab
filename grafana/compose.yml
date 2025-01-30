@@ -1,0 +1,52 @@
+include:
+    - ./endlessh-compose.yml
+    - ./loki-compose.yml
+    - ./speedtest-compose.yml
+
+services:
+    grafana-prometheus:
+        container_name: grafana-prometheus
+        image: prom/prometheus:latest
+        restart: unless-stopped
+        command:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+            - '--storage.tsdb.retention.time=90d'
+            - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+            - '--web.console.templates=/usr/share/prometheus/consoles'
+            - '--web.enable-admin-api'
+            - '--log.level=warn'
+        volumes:
+            - ./prometheus/:/etc/prometheus/
+            - prometheus_data:/prometheus
+        depends_on:
+            - grafana-speedtest
+            - grafana-endlessh
+            - grafana-loki
+
+    grafana:
+        container_name: grafana
+        image: grafana/grafana:latest
+        restart: unless-stopped
+        environment:
+            - GF_SECURITY_ADMIN_PASSWORD=admin
+            - GF_USERS_ALLOW_SIGN_UP=false
+            - GF_INSTALL_PLUGINS=flant-statusmap-panel,ae3e-plotly-panel
+            - GF_LIVE_ALLOWED_ORIGINS=https://grafana.${DOMAIN}
+            - GF_PATHS_CONFIG=/var/lib/grafana/custom.ini
+        volumes:
+            - grafana_data:/var/lib/grafana
+            - ./grafana/custom.ini:/var/lib/grafana/custom.ini
+            - ./grafana/provisioning/:/etc/grafana/provisioning/
+        depends_on:
+            - grafana-prometheus
+            - grafana-loki
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)
+            - traefik.http.services.grafana.loadbalancer.server.port=3000
+            - traefik.http.routers.grafana.middlewares=sso-required@file
+
+volumes:
+    prometheus_data:
+    grafana_data:

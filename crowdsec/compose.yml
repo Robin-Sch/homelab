@@ -1,0 +1,31 @@
+services:
+    crowdsec:
+        container_name: crowdsec
+        image: crowdsecurity/crowdsec:latest
+        restart: unless-stopped
+        environment:
+            - TZ=${TZ}
+            - NTFY_API_KEY=${NTFY_API_KEY}
+        volumes:
+            - ./config:/etc/crowdsec
+            - crowdsec-db:/var/lib/crowdsec/data
+            - /var/log/auth.log:/var/log/auth.log:ro
+            - /var/log/nginx/access.log:/var/log/nginx/access.log:ro
+        networks:
+            - default
+            - grafana_default
+
+    cs-cloudflare-bouncer:
+        container_name: cs-cloudflare-bouncer
+        image: crowdsecurity/cloudflare-bouncer
+        restart: unless-stopped
+        environment:
+            - CLOUDFLARE_TOKEN=${CLOUDFALRE_TOKEN}
+            - API_KEY=${API_KEY} # Crowdsec api key, run "docker exec -it crowdsec cscli bouncers add crowdsec-cloudflare-bouncer" to get it
+        volumes:
+            - ./cs-cloudflare-bouncer.yaml:/etc/crowdsec/bouncers/crowdsec-cloudflare-bouncer.yaml
+        depends_on:
+            - crowdsec
+
+volumes:
+    crowdsec-db: {}

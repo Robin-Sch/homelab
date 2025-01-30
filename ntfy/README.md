@@ -1,0 +1,1 @@
+Make sure to edit `ntfy/server.yml` with the correct domain

@@ -1,0 +1,8 @@
+services:
+    portspoof:
+        container_name: portspoof
+        build:
+            context: .
+        restart: unless-stopped
+        ports:
+            - 4444:4444

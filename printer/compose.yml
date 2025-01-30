@@ -1,0 +1,15 @@
+services:
+    scanservjs:
+        container_name: scanservjs
+        image: sbs20/scanservjs:latest
+        restart: unless-stopped
+        volumes:
+            - ./config:/app/config
+            - ./output:/app/data/output
+        environment:
+            - SANED_NET_HOSTS=172.28.0.1
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.printer.rule=Host(`print.${DOMAIN}`)
+            - traefik.http.services.printer.loadbalancer.server.port=8080
+            - traefik.http.routers.printer.middlewares=sso-required@file

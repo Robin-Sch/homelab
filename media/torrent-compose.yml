@@ -1,0 +1,94 @@
+services:
+    transmission:
+        container_name: transmission
+        image: linuxserver/transmission:latest
+        restart: unless-stopped
+        cpus: 0.5
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        volumes:
+            - ${DOCKER_DATA}/media/transmission:/config
+            - torrent-downloads:/downloads
+        ports:
+            - 51413:51413
+            - 51413:51413/udp
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.transmission.rule=Host(`transmission.${DOMAIN}`)
+            - traefik.http.services.transmission.loadbalancer.server.port=9091
+            - traefik.http.routers.transmission.middlewares=sso-required@file
+
+    radarr:
+        container_name: radarr
+        image: linuxserver/radarr:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        volumes:
+            - ${DOCKER_DATA}/media/radarr:/config
+            - torrent-downloads:/downloads
+        depends_on:
+            - jackett
+            - transmission
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.radarr.rule=Host(`movies.${DOMAIN}`)
+            - traefik.http.services.radarr.loadbalancer.server.port=7878
+            - traefik.http.routers.radarr.middlewares=sso-required@file
+
+    sonarr:
+        container_name: sonarr
+        image: linuxserver/sonarr:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        volumes:
+            - ${DOCKER_DATA}/media/sonarr:/config
+            - torrent-downloads:/downloads
+        depends_on:
+            - jackett
+            - transmission
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.sonarr.rule=Host(`shows.${DOMAIN}`)
+            - traefik.http.services.sonarr.loadbalancer.server.port=8989
+            - traefik.http.routers.sonarr.middlewares=sso-required@file
+
+    bazarr:
+        container_name: bazarr
+        image: linuxserver/bazarr:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        volumes:
+            - ${DOCKER_DATA}/media/bazarr:/config
+            - torrent-downloads:/downloads
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.bazarr.rule=Host(`subtitles.${DOMAIN}`)
+            - traefik.http.services.bazarr.loadbalancer.server.port=6767
+            - traefik.http.routers.bazarr.middlewares=sso-required@file
+
+    jackett:
+        container_name: jackett
+        image: linuxserver/jackett:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        volumes:
+            - ${DOCKER_DATA}/media/jackett:/config
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.jackett.rule=Host(`jackett.${DOMAIN}`)
+            - traefik.http.services.jackett.loadbalancer.server.port=6767
+            - traefik.http.routers.jackett.middlewares=sso-required@file

@@ -1,0 +1,33 @@
+services:
+    paperless:
+        container_name: paperless
+        image: ghcr.io/paperless-ngx/paperless-ngx:latest
+        restart: unless-stopped
+        environment:
+            - USERMAP_UID=1000
+            - USERMAP_GID=1000
+            - PAPERLESS_REDIS=redis://paperless-redis:6379
+            - PAPERLESS_URL=https://pdf.${DOMAIN}
+            - PAPERLESS_ENABLE_HTTP_REMOTE_USER=true
+            - PAPERLESS_HTTP_REMOTE_USER_HEADER_NAME=HTTP_GAP_AUTH
+#            - PAPERLESS_OCR_USER_ARGS='{"continue_on_soft_render_error": true}'
+            - PAPERLESS_TIME_ZONE=${TZ}
+            - PAPERLESS_OCR_LANGUAGE=eng
+            - PAPERLESS_OCR_LANGUAGES=${PAPERLESS_OCR_LANGUAGES}
+        volumes:
+            - ${DOCKER_DATA}/paperless/data:/usr/src/paperless/data
+            - ./media:/usr/src/paperless/media
+            - ./export:/usr/src/paperless/export
+            - ./import:/usr/src/paperless/consume
+        depends_on:
+            - paperless-redis
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.paperless.rule=Host(`pdf.${DOMAIN}`)
+            - traefik.http.services.paperless.loadbalancer.server.port=8000
+            - traefik.http.routers.paperless.middlewares=sso-required@file
+
+    paperless-redis:
+        container_name: paperless-redis
+        image: redis:alpine
+        restart: unless-stopped

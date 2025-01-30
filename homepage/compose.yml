@@ -1,0 +1,19 @@
+include:
+    - ./dashboard-compose.yml
+
+services:
+    homepage:
+        container_name: homepage
+        image: ghcr.io/gethomepage/homepage:latest
+        restart: unless-stopped
+        environment:
+            - HOMEPAGE_VAR_PIHOLE_API_KEY=${PIHOLE_API_KEY}
+            - HOMEPAGE_VAR_JELLYFIN_API_KEY=${JELLYFIN_API_KEY}
+        volumes:
+            - ./config:/app/config
+            - ./background.jpg:/app/public/images/background.jpg
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.home.rule=Host(`home.${DOMAIN}`)
+            - traefik.http.services.home.loadbalancer.server.port=3000
+            - traefik.http.routers.home.middlewares=sso-required@file

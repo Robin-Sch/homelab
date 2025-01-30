@@ -1,0 +1,16 @@
+services:
+    mediatracker:
+        container_name: mediatracker
+        image: bonukai/mediatracker:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        volumes:
+            - ./mediatracker:/storage
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.mediatracker.rule=Host(`media.${DOMAIN}`)
+            - traefik.http.services.mediatracker.loadbalancer.server.port=7481
+            - traefik.http.routers.mediatracker.middlewares=sso-required@file

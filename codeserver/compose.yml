@@ -1,0 +1,21 @@
+services:
+    code-server:
+        container_name: code-server
+        image: linuxserver/code-server:latest
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+            - PASSWORD=${PASSWORD}
+            - SUDO_PASSWORD=${PASSWORD}
+            - PROXY_DOMAIN=${DOMAIN}
+            - LOG_LEVEL=warn
+        volumes:
+            - ./code:/config/workspace
+            - ${DOCKER_DATA}/config:/config
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.code-server.rule=Host(`codeserver.${DOMAIN}`)
+            - traefik.http.services.code-server.loadbalancer.server.port=8443
+            - traefik.http.services.code-server.middlewares=sso-required@file

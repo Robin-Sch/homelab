@@ -1,0 +1,76 @@
+services:
+    keycloak:
+        container_name: keycloak
+        image: quay.io/keycloak/keycloak:22.0
+        restart: unless-stopped
+        command: start
+        environment:
+            - KEYCLOAK_ADMIN=admin
+            - KEYCLOAK_ADMIN_PASSWORD=admin
+            - KC_PROXY_ADDRESS_FORWARDING=true # what does this?
+            - KC_HOSTNAME_STRICT=false
+            - KC_PROXY=edge
+            - KC_HOSTNAME_URL=https://auth.${DOMAIN}
+            - KC_DB=keycloak
+            - KC_DB_URL_HOST=keycloak-postgres
+            - KC_DB_NAME=keycloak
+            - KC_DB_USERNAME=keycloak
+            - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
+        depends_on:
+            - keycloak-postgres
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.keycloak.rule=Host(`auth.${DOMAIN}`)
+            - traefik.http.services.keycloak.loadbalancer.server.port=8080
+
+    keycloak-postgres:
+        container_name: keycloak-postgres
+        image: postgres:14-alpine
+        restart: unless-stopped
+        environment:
+            - POSTGRES_DB=keycloak
+            - POSTGRES_USER=keycloak
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        volumes:
+            - ${DOCKER_DATA}/sso/keycloak:/var/lib/postgresql/data
+
+    oauth2-proxy:
+        container_name: oauth2-proxy
+        image: quay.io/oauth2-proxy/oauth2-proxy:latest
+        restart: unless-stopped
+        environment:
+            - OAUTH2_PROXY_PROVIDER=keycloak-oidc
+            - OAUTH2_PROXY_CLIENT_ID=oauth2-proxy
+            - OAUTH2_PROXY_CLIENT_SECRET=${CLIENT_SECRET}
+            - OAUTH2_PROXY_REDIRECT_URL=https://sso.${DOMAIN}/oauth2/callback
+            - OAUTH2_PROXY_OIDC_ISSUER_URL=https://auth.${DOMAIN}/realms/homelab
+            - OAUTH2_PROXY_EMAIL_DOMAINS=${DOMAIN}
+#            - OAUTH2_PROXY_ALLOWED_ROLES=
+#            - OAUTH2_PROXY_ALLOWED_GROUP=
+            - OAUTH2_PROXY_CODE_CHALLENGE_METHOD=S256
+            - OAUTH2_PROXY_PASS_HOST_HEADER=true # headers
+            - OAUTH2_PROXY_PASS_USER_HEADER=true # headers
+            - OAUTH2_PROXY_SET_XAUTHREQUEST=true # headers
+            - OAUTH2_PROXY_XAUGHTREQUEST=true # headers
+            - OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4180
+            - OAUTH2_PROXY_REQUEST_LOGGING=false
+            - OAUTH2_PROXY_COOKIE_SECRET=${COOKIE_SECRET}
+            - OAUTH2_PROXY_SKIP_PROVIDER_BUTTON=true
+            - OAUTH2_PROXY_UPSTREAMS=static://202 # rev proxy
+            - OAUTH2_PROXY_REVERSE_PROXY=true # rev proxy
+            - OAUTH2_PROXY_WHITELIST_DOMAINS=.${DOMAIN} # whitelist
+            - OAUTH2_PROXY_COOKIE_DOMAINS=.${DOMAIN} #whitelist
+            - OAUTH2_PROXY_SESSION_STORE_TYPE=redis # redis
+            - OAUTH2_PROXY_REDIS_CONNECTION_URL=redis://oauth2-proxy-redis # redis
+        depends_on:
+            - keycloak
+            - oauth2-proxy-redis
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.oauth2-proxy.rule=Host(`sso.${DOMAIN}`)
+            - traefik.http.services.oauth2-proxy.loadbalancer.server.port=4180
+
+    oauth2-proxy-redis:
+        container_name: oauth2-proxy-redis
+        image: redis:alpine
+        restart: unless-stopped

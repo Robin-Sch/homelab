@@ -1,0 +1,53 @@
+services:
+    pihole:
+        container_name: pihole
+        hostname: pihole
+        restart: unless-stopped
+        image: pihole/pihole:latest
+        environment:
+            - TZ=Europe/Amsterdam
+            - WEBPASSWORD=${PIHOLE_PASS}
+            - PIHOLE_DNS_=192.168.1.6#53
+            - WEBTHEME="default-darker"
+        volumes:
+            - ./pihole:/etc/pihole/
+            - dnsmasq.d:/etc/dnsmasq.d/
+        ports:
+            - ${IP}:53:53/tcp
+            - ${IP}:53:53/udp
+            - ${IP6}:53:53/tcp
+            - ${IP6}:53:53/udp
+        networks:
+            dns_net:
+                ipv4_address: 192.168.1.5
+        depends_on:
+            - unbound
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.pihole.rule=Host(`pihole.${DOMAIN}`)
+            - "traefik.http.middlewares.pihole-redirect-admin.redirectregex.regex=^https?://pihole.${DOMAIN}/$$"
+            - "traefik.http.middlewares.pihole-redirect-admin.redirectregex.replacement=https://pihole.${DOMAIN}/admin"
+            - traefik.http.middlewares.pihole-redirect-admin.redirectregex.permanent=true
+            - traefik.http.services.pihole.loadbalancer.server.port=80
+            - traefik.http.routers.pihole.middlewares=sso-required@file,pihole-redirect-admin
+
+    unbound:
+        container_name: unbound
+        restart: unless-stopped
+        image: klutchell/unbound:latest
+        networks:
+            dns_net:
+                ipv4_address: 192.168.1.6
+
+volumes:
+    dnsmasq.d:
+
+networks:
+    dns_net:
+        enable_ipv6: true
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 192.168.1.0/24
+                  gateway: 192.168.1.1
+                  ip_range: 192.168.1.4/30 # 192.168.1.5 and 192.168.1.6

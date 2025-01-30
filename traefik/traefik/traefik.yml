@@ -1,0 +1,51 @@
+global:
+    checkNewVersion: false
+    sendAnonymousUsage: false
+
+entryPoints:
+    http:
+        address: :80
+        http:
+            redirections:
+                entryPoint:
+                    to: https
+                    scheme: https
+    https:
+        address: :443
+        http3: {}
+        http:
+            tls:
+                certResolver: cloudflare
+                domains:
+                  - main: domain.com
+                    sans: "*.domain.com"
+                  - main: subdomain.domain.com
+                    sans: "*.subdomain.domain.com"
+            middlewares:
+                - default-security-headers@file
+
+log:
+    level: "ERROR"
+
+api:
+    insecure: true
+    dashboard: true
+
+providers:
+    docker:
+        exposedByDefault: false
+        watch: true
+        endpoint: "unix:///var/run/docker.sock"
+    file:
+        filename: /etc/traefik/dynamic.yml
+
+certificatesResolvers:
+    cloudflare:
+        acme:
+            email: EMAIL
+            storage: /etc/traefik/acme.json
+            dnsChallenge:
+                provider: cloudflare
+                resolvers:
+                    - "1.1.1.1:53"
+                    - "1.0.0.1:53"

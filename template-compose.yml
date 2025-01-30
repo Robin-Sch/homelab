@@ -1,0 +1,13 @@
+services:
+    xxx:
+        container_name: xxx
+        image: xxx
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=${TZ}
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.xxx.rule=Host(`xxx.${DOMAIN}`)
+            - traefik.http.services.xxx.loadbalancer.server.port=xxx

@@ -1,0 +1,11 @@
+services:
+     traggo:
+        container_name: traggo
+        image: traggo/server:latest
+        restart: unless-stopped
+        environment:
+            TRAGGO_DEFAULT_USER_NAME: ${TRAGGO_USER}
+            TRAGGO_DEFAULT_USER_PASS: ${TRAGGO_PASS}
+            TZ: ${TZ}
+        volumes:
+            - ./data:/opt/traggo/data

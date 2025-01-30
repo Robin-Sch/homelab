@@ -1,0 +1,13 @@
+services:
+    nextcloud-rss:
+        container_name: nextcloud-rss
+        image: heussd/fivefilters-full-text-rss:latest
+        restart: unless-stopped
+        volumes:
+            - ./rss/custom_config.php:/var/www/html/custom_config.php
+            - ./rss/site_config:/var/www/html/site_config/custom
+            - /dev/null:/var/log/apache2/access.log
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.rss.rule=Host(`rss.${DOMAIN}`)
+            - traefik.http.services.rss.loadbalancer.server.port=80

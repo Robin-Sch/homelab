@@ -1,0 +1,36 @@
+services:
+    protonvpn:
+        container_name: protonvpn
+        image: qmcgaw/gluetun:v3
+        restart: unless-stopped
+        cap_add:
+            - NET_ADMIN
+        privileged: true
+        environment:
+            - VPN_SERVICE_PROVIDER=protonvpn
+            - OPENVPN_USER=${PROTONVPN_USERNAME}
+            - OPENVPN_PASSWORD=${PROTONVPN_PASSWORD}
+            - SERVER_COUNTRIES=US
+            - FREE_ONLY=on
+            - HTTPPROXY=on
+            - HTTPPROXY_STEALTH=on
+            - HTTPPROXY_LOG=off
+        volumes:
+            - gluetun:/gluetun
+        ports:
+            - ${IP}:8888:8888/tcp # HTTP proxy
+            - ${IP}:1080:1080/tcp # SOCKS5 proxy
+            - ${IP}:1080:1080/udp # SOCKS5 proxy
+            - ${IP}:8388:8388/tcp # Shadowsocks
+            - ${IP}:8388:8388/udp # Shadowsocks
+
+    socks5:
+        container_name: socks5
+        image: serjs/go-socks5-proxy
+        restart: unless-stopped
+        network_mode: service:protonvpn
+        depends_on:
+            - protonvpn
+
+volumes:
+    gluetun: {}

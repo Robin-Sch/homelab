@@ -1,0 +1,7 @@
+version: 1
+log:
+  level: ERROR
+
+notify:
+  urls:
+    - "https://ntfy.DOMAIN/alerts?auth=XXX"

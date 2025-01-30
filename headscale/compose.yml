@@ -1,0 +1,13 @@
+services:
+    headscale:
+        container_name: headscale
+        image: headscale/headscale:latest
+        restart: unless-stopped
+        command: serve
+        volumes:
+            - ./config:/etc/headscale/
+            - ./data:/var/lib/headscale
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.headscale.rule=Host(`headscale.${DOMAIN}`)
+            - traefik.http.services.headscale.loadbalancer.server.port=8080

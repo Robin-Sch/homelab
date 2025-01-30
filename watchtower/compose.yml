@@ -1,0 +1,11 @@
+services:
+    watchtower:
+        container_name: watchtower
+        image: containrrr/watchtower
+        restart: unless-stopped
+        environment:
+            - WATCHTOWER_NOTIFICATIONS=shoutrrr
+            - WATCHTOWER_NOTIFICATION_URL=generic+https://ntfy.${DOMAIN}/updates?auth=${NTFY_API_KEY} # get NTFY_API_KEY using echo -n "Bearer TOKEN" | base64 | tr -d '='
+            - WATCHTOWER_NO_STARTUP_MESSAGE=false
+        volumes:
+            - /run/user/1000/docker.sock:/var/run/docker.sock
