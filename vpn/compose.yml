@@ -1,0 +1,79 @@
+# For tailscale to gluetun, see https://github.com/ecliptik/tailscale-proxy and https://github.com/qdm12/gluetun/discussions/2201
+
+
+services:
+    vpn:
+        container_name: vpn
+        image: qmcgaw/gluetun:v3
+        restart: unless-stopped
+        cap_add:
+            - NET_ADMIN
+        devices:
+            - /dev/net/tun:/dev/net/tun
+        environment:
+            # Use whatever provider you have
+            - VPN_SERVICE_PROVIDER=custom
+            - VPN_TYPE=wireguard
+            - WIREGUARD_ENDPOINT_IP=yes
+            - WIREGUARD_ENDPOINT_PORT=51820
+            - WIREGUARD_PUBLIC_KEY=yes
+            - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+            - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+            # End provider config
+            - HTTPPROXY=off
+            - HTTPPROXY_STEALTH=on
+            - HTTPPROXY_LOG=off
+            - SHADOWSOCKS=off
+            - SHADOWSOCKS_LOG=off
+            - FIREWALL_OUTBOUND_SUBNETS=100.64.0.0/24 # tailscale ip
+            - DOT=off
+            - DNS_ADDRESS=100.128.254.254
+            - HEALTH_TARGET_ADDRESS=1.1.1.1
+        volumes:
+            - gluetun:/gluetun
+            - /etc/hosts:/etc/hosts:ro
+        ports:
+            - ${IP}:1080:1080/tcp # SOCKS5 proxy
+            - ${IP}:1080:1080/udp # SOCKS5 proxy
+            - ${IP}:8888:8888/tcp # HTTP proxy
+            - ${IP}:8388:8388/tcp # Shadowsocks
+            - ${IP}:8388:8388/udp # Shadowsocks
+        sysctls:
+            - net.ipv6.conf.all.disable_ipv6=0
+        networks:
+            dns_net:
+                ipv4_address: 100.128.254.253
+
+    socks5:
+        container_name: socks5
+        image: serjs/go-socks5-proxy
+        restart: unless-stopped
+        network_mode: service:vpn
+        depends_on:
+            - vpn
+
+    tailscale-exit-node:
+       container_name: tailscale-exit-node
+       image: ghcr.io/tailscale/tailscale:latest
+       restart: unless-stopped
+       cap_add:
+           - NET_ADMIN
+           - NET_RAW
+       devices:
+           - /dev/net/tun:/dev/net/tun
+       network_mode: service:vpn
+       environment:
+           - TS_STATE_DIR=/var/lib/tailscale
+           - TS_USERSPACE=true # needed for network_mode
+           - TS_ACCEPT_DNS=false
+           - TS_ENABLE_METRICS=false
+           - TS_NO_LOGS_NO_SUPPORT=true
+           - TS_EXTRA_ARGS=--login-server ${TAILSCALE_DOMAIN} --advertise-exit-node
+           - TS_HOSTNAME=${TAILSCALE_HOSTNAME}
+       volumes:
+           - ./tailscale:/var/lib/tailscale
+       depends_on:
+           - vpn 
+
+volumes:
+    gluetun: {}
