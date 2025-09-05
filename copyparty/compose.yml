@@ -1,0 +1,16 @@
+services:
+    copyparty:
+        container_name: copyparty
+        image: copyparty/ac:1.19.7
+        restart: always
+        command: --xff-src=100.128.0.0/16
+        user: 1000:1000
+        volumes:
+            - ./copyparty.conf:/cfg/copyparty.conf
+            - ${DOCKER_DATA}/copyparty/config:/cfg
+            - ${DOCKER_DATA}/copyparty/data:/w
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.copyparty.rule=Host(`fs.${DOMAIN}`)
+            - traefik.http.services.copyparty.loadbalancer.server.port=3923
+            - traefik.http.routers.copyparty.middlewares=sso-required@file
